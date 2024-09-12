@@ -13,6 +13,7 @@ class NFA[STATE]:
     q0: STATE
     d: dict[tuple[STATE, str], set[STATE]]
     F: set[STATE]
+
     def __init__(self, S: set[str], K: set[STATE], q0: STATE, d: dict[tuple[STATE, str], set[STATE]], F: set[STATE]):
         self.S = S
         self.K = K
@@ -22,8 +23,9 @@ class NFA[STATE]:
 
     def epsilon_closure(self, state: STATE) -> set[STATE]:
         # compute the epsilon closure of a state (you will need this for subset construction)
+        # see the EPSILON definition at the top of this file
         epsilon_closure = []
-        list = [state]              # starile care trb procesate
+        list = [state]
 
         for element in list:
             epsilon_closure.append(element)
@@ -37,8 +39,7 @@ class NFA[STATE]:
         return set(epsilon_closure)
 
     def subset_construction(self) -> DFA[frozenset[STATE]]:
-        # convert this nfa to a DFA_ using the subset construction algorithm
-
+        # convert this nfa to a dfa using the subset construction algorithm
         DFA_initial_state = frozenset(self.epsilon_closure(self.q0))
         all_states = [frozenset(self.epsilon_closure(self.q0))]
         DFA_transitions = {}
@@ -47,7 +48,7 @@ class NFA[STATE]:
 
         for state in all_states:
 
-            if state.intersection(self.F):                      # daca state contine orice st finala din NFA => se adauga in starile finale DFA
+            if state.intersection(self.F):
                 DFA_final_states.add(frozenset(state))
 
             for i in range(len(symbols)):
@@ -72,4 +73,7 @@ class NFA[STATE]:
 
         return DFA(self.S, set(all_states), DFA_initial_state, DFA_transitions, DFA_final_states)
 
-
+    def remap_states[OTHER_STATE](self, f: 'Callable[[STATE], OTHER_STATE]') -> 'NFA[OTHER_STATE]':
+        # optional, but may be useful for the second stage of the project. Works similarly to 'remap_states'
+        # from the DFA class. See the comments there for more details.
+        pass

@@ -5,20 +5,25 @@ weird_characters = {'_', '.', '@', ':'}
 operators = {'*', '+', '?', '|', '#', '['}
 get_precedences = {'*': 3, '+': 3, '?': 3, '[': 3, '#': 2, '|': 1}
 
-class Regex:
 
+class Regex:
     def thompson(self) -> NFA[int]:
         raise NotImplementedError('the thompson method of the Regex class should never be called')
 
+# you should extend this class with the type constructors of regular expressions and overwrite the 'thompson' method
+# with the specific nfa patterns. for example, parse_regex('ab').thompson() should return something like:
 
-def simple_character(element, anterior, posterior):         # verific daca '-' este un caract normal sau face parte din syntathic sugar
+# >(0) --a--> (1) -epsilon-> (2) --b--> ((3))
+
+# extra hint: you can implement each subtype of regex as a @dataclass extending Regex
+def simple_character(element, anterior, posterior):
     if element == '-':
         if anterior not in {'0', 'a', 'A'} and posterior not in {'9', 'z', 'Z'}:
             return True
         else:
             return False
 
-def get_the_parentheses(expression):        # cauta prima pereche de () si returneaza ce este intre ele
+def get_the_parentheses(expression):
     expression_string = ''.join(expression)
     opening_index = -1
     aux = []
@@ -33,7 +38,7 @@ def get_the_parentheses(expression):        # cauta prima pereche de () si retur
     else:
         return None
 
-def search_in_parentheses(expression):      # numarul de operatori in regex
+def search_in_parentheses(expression):
     ops = {'#', '|'}
     counter = 0
     new_expression = get_the_parentheses(expression)
@@ -45,7 +50,9 @@ def search_in_parentheses(expression):      # numarul de operatori in regex
 def insert_concatenation_symbols(expression):
     result = []
     #expression = re.sub(r'(?<!\\)\s', '', expression)
-    expression = re.sub(r'(?<!\\)(?<!\\n)(\s)', '', expression)
+    #expression = re.sub(r'(?<!\\)(?<!\\n)(\s)', '', expression)
+
+    expression = re.sub(r'(?<!\\)[^\S\n]', '', expression)          # trece cu NEW LINE
 
     for i, char in enumerate(expression):
         result.append(char)
@@ -57,14 +64,6 @@ def insert_concatenation_symbols(expression):
                 if next_char == '\\':
                     result.append('#')
                     continue
-
-
-                # if i > 1:
-                #     last_char = expression[i - 1]
-                #     if last_char == '\\':
-                #         result.append('#')
-                #         continue
-
 
                 if char == '-':
                     if i >= 1:
@@ -112,20 +111,20 @@ def insert_concatenation_symbols(expression):
 
     return result
 
-def helper(op, stack, postfix):     # helper pt stiva, pt a respecta ordinea operatorilor
+def helper(op, stack, postfix):
 
     while stack and stack[-1] != '(' and get_precedences.get(stack[-1], 0) >= get_precedences.get(op, 0):
         postfix.append(stack.pop())
     stack.append(op)
 
-def new_line_case(i, char, expression):     # pentru testul de '\n'
+def new_line_case(i, char, expression):
 
     if char == 'n' and i >= 1 and expression[i - 1] == '\\':
         return True
     else:
         return False
 
-def postfix(concatenated_expression):   # reverse polish notation
+def postfix(concatenated_expression):
     expression = insert_concatenation_symbols(concatenated_expression)
     stack = []
     postfix = []
@@ -148,19 +147,22 @@ def postfix(concatenated_expression):   # reverse polish notation
                 postfix.append('\\' + char)
             else:
                 postfix.append(char)
+        elif char == '\n':
+            postfix.append(char)
         elif char == '(':
             stack.append(char)
-        elif char == ')':    # se extrag elemente din stiva si se adaugă in rezultatul postfix pana cand se intalneste o paranteza deschisa
+        elif char == ')':
             while stack and stack[-1] != '(':
                 postfix.append(stack.pop())
             stack.pop()
         elif char in operators:
             helper(char, stack, postfix)
 
-    while stack:    # dupa procesarea tuturor => elem ramase se adauga in forma postifata
+    while stack:
         postfix.append(stack.pop())
 
     return postfix
+
 
 def parse_regex(regex: str) -> Regex:
 
@@ -337,10 +339,6 @@ class Character(Regex):
             k_nfa = set()
             f_nfa = set()
             symbols_nfa = set(self.char)
-            # if self.char[0] == '\\':
-            #     symbols_nfa = {self.char}
-            # if self.char == '\\n':
-            #     symbols_nfa = {'\n'}
 
             transitions_nfa = {}
             if self.global_counter != 0:
@@ -495,15 +493,5 @@ class QuestionMark(Regex):
         transitions_nfa[(f.pop(), EPSILON)] = f_nfa
 
         return NFA(self.current_nfa.S, k_nfa, q0_nfa, transitions_nfa, f_nfa)
-
-
-
-
-
-
-
-
-
-
 
 
